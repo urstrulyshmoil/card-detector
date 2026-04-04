@@ -67,9 +67,19 @@ export default function App() {
     const formData = new FormData();
     formData.append("image", image);
     try {
-      const res = await fetch("/api/detect", { method: "POST", body: formData });
+      const apiUrl = import.meta.env.VITE_API_URL || "";
+      const res = await fetch(`${apiUrl}/api/detect`, { method: "POST", body: formData });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(
+          text.includes("<!DOCTYPE") || text.includes("<html")
+            ? "Backend is waking up, please wait 30 seconds and try again!"
+            : text
+        );
+      }
+
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Detection failed");
       setResult(data);
     } catch (err) {
       setError(err.message);
@@ -174,6 +184,7 @@ export default function App() {
         .copy-btn:hover { background: rgba(201,168,76,0.2); }
         .summary-bar { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 12px; font-size: 0.8rem; color: var(--muted); }
         .error-box { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.25); border-radius: var(--radius); padding: 16px 20px; color: var(--red); font-size: 0.8rem; margin-bottom: 24px; }
+        .wake-notice { background: rgba(201,168,76,0.08); border: 1px solid rgba(201,168,76,0.2); border-radius: var(--radius); padding: 12px 20px; color: var(--accent); font-size: 0.75rem; margin-bottom: 24px; text-align: center; }
       `}</style>
 
       <div className="bg-pattern" />
@@ -186,6 +197,10 @@ export default function App() {
           <p className="subtitle">AI-Powered Playing Card Recognition</p>
           <div className="divider" />
         </header>
+
+        <div className="wake-notice">
+          ⚡ First request may take 30–60 seconds to wake the server. Subsequent requests are instant!
+        </div>
 
         <div
           className={`upload-zone ${dragging ? "drag" : ""} ${preview ? "has-image" : ""}`}
@@ -223,7 +238,7 @@ export default function App() {
             <div className="card-spinner">
               {["♠", "♥", "♦", "♣"].map((s, i) => <div key={i} className="spin-card">{s}</div>)}
             </div>
-            <p className="loading-text">Grok Vision is reading the cards...</p>
+            <p className="loading-text">AI is reading the cards...</p>
           </div>
         )}
 
